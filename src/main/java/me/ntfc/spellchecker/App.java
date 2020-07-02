@@ -1,26 +1,42 @@
 package me.ntfc.spellchecker;
 
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
-public class App {
+@Command(name = "java-spellchecker", mixinStandardHelpOptions = true)
+public class App implements Callable<Integer> {
 
-    private static final int BITMAP_SIZE = 2_849_827;
+    @Option(names = {"-m"}, paramLabel = "NUM", defaultValue = "2500000", description = "the bloom filter size (i.e. number of bits)")
+    int bitMapSize;
 
-    private static final int NUMBER_OF_HASHES = 6;
+    @Option(names = {"-k"}, paramLabel = "NUM", defaultValue = "6", description = "number of hashes")
+    int numberOfHashes;
+
+    @Option(names = {"-d", "--dict"}, paramLabel = "FILE", required = true, description = "the dictionary file")
+    File dictionaryFile;
+
+    @Option(names = {"-f", "--file"}, paramLabel = "FILE", required = true, description = "the text to spellcheck")
+    File textFile;
 
     public static void main(String[] args) throws IOException {
-        Path dictPath = Paths.get("/home/nuno/Projects/java-spellchecker/wordlist.txt");
-        Path text = Paths.get("/home/nuno/Projects/java-spellchecker/example-text.txt");
-
-        BloomFilter b2 = new BloomFilter(BITMAP_SIZE, NUMBER_OF_HASHES);
-        Dictionary dictionary = new Dictionary(dictPath, b2);
-
-        Set<String> spellcheck = dictionary.spellcheck(text);
-        System.out.println(spellcheck);
-
+        System.exit(new CommandLine(new App()).execute(args));
     }
 
+    @Override
+    public Integer call() throws Exception {
+        BloomFilter bloomFilter = new BloomFilter(bitMapSize, numberOfHashes);
+        Dictionary dictionary = new Dictionary(dictionaryFile.toPath(), bloomFilter);
+
+        Set<String> spellcheck = dictionary.spellcheck(textFile.toPath());
+        
+        System.out.println(spellcheck);
+
+        return spellcheck.size();
+    }
 }
