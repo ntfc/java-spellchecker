@@ -5,7 +5,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -24,7 +23,7 @@ public class App implements Callable<Integer> {
     @Option(names = {"-f", "--file"}, paramLabel = "FILE", required = true, description = "the text to spellcheck")
     File textFile;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         System.exit(new CommandLine(new App()).execute(args));
     }
 
@@ -34,7 +33,7 @@ public class App implements Callable<Integer> {
         Dictionary dictionary = new Dictionary(dictionaryFile.toPath(), bloomFilter);
 
         Set<String> spellcheck = dictionary.spellcheck(textFile.toPath());
-        
+
         System.out.println(spellcheck);
 
         return spellcheck.size();
