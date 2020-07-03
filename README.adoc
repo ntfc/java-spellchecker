@@ -1,3 +1,73 @@
-= Java spellchecker using Bloom Filters
+= Spell Checker using Java + Bloom Filters
+Nuno Carvalho <me@ntfc.me>
+:kata-05: http://codekata.com/kata/kata05-bloom-filters/
+:bitset: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/BitSet.html[BitSet]
+:murmur: https://en.wikipedia.org/wiki/MurmurHash[MurmurHash]
+:guava-hashing: https://guava.dev/releases/snapshot/api/docs/com/google/common/hash/Hashing.html[Hashing]
+:picocli: https://picocli.info/[picocli]
 
-Solution for kata http://codekata.com/kata/kata05-bloom-filters/
+This a basic implementation of a spell checker using bloom filters as proposed in {kata-05}[CodeKata 05].
+
+The spell checker can be used as command line tool (CLI created using `{picocli}`), requiring a dictionary file and a file to be spellchecked to be provided.
+
+To create the `jar` executable run:
+
+[code,shell]
+----
+mvn package
+----
+
+This will create an executable `jar` file at `target/java-spellchecker-1.0-SNAPSHOT-jar-with-dependencies.jar`.
+
+The spell checked can be used as follows:
+
+[code,shell]
+----
+$ java -jar target/java-spellchecker-1.0-SNAPSHOT-jar-with-dependencies.jar
+Usage: java-spellchecker [-hV] [--verbose] -d=FILE -f=FILE [-k=NUM] [-m=NUM]
+  -d, --dict=FILE    the dictionary file
+  -f, --file=FILE    the text to spellcheck
+  -h, --help         Show this help message and exit.
+  -k, --hashes=NUM   number of hashes
+  -m, --size=NUM     the bloom filter size (i.e. number of bits)
+  -V, --version      Print version information and exit.
+      --verbose
+----
+
+== Implementation details
+
+The application works as follows:
+
+. Create an empty Bloom Filter with `m` bits (defaults to `1024` bits)
+. Load the dictionary file into the bloom filter
+.. Each word (i.e. line of the file) is hashed `k` times (`k` defaults to `1`)
+. Read the file to be spell checked line by line, where then each word is checked against the bloom filter
+.. If any of the `k` hashes of a given word is not in the bloom filter, then the word is misspelled
+. The misspelled words are collected into a `Set<String>` and printed to the standard output
+.. Additionally, the program's exit code reports the number of misspells
+
+=== Data structures
+
+The `BloomFilter` is stored in a Java `{bitset}` that provides simple methods to set and get specific bit positions.
+
+For hashing, a non-cryptographic hash function (e.g {murmur}) is used due to its speed advantages compared to secure functions.
+Guava's `{guava-hashing}` provides an implementation of Murmur and that was used due to ease of usage.
+
+Instead of hashing the same word with multiple `k` hash functions, a word is hashed once and its output is then used to
+derive `k` hashes modulo the size of the Bloom Filter.
+
+=== Improvements/TODOs
+
+* Bloom filter insertion/comparison improvements
+** For the insertion, instead of individually setting `k` bits it is possible to do it in
+one XOR operation: `XOR` the complete bloom filter against a newly created bloom filter that only has the new `k` hashes.
+** The same can be done for comparison, but using `AND` instead of `XOR`. If the `AND` operation result is the
+same as the complete bloom filter that means the word exists in the dictionary
+* Better file charset detection
+* Improve word splitting while parsing the file to be spell checked. It currently does not deal well with punctuation or
+"camel case" words
+* Remove dependency to Guava, and directly include the source code of hash functions
+* Unit tests
+** Specially around the bitset insertion/comparison logic!
+* Benchmark testing
+* Explore native compilation for faster startup times and smaller binaries e.g. GraalVM
