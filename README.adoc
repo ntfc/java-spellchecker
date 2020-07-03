@@ -8,7 +8,10 @@ Nuno Carvalho <me@ntfc.me>
 
 This a basic implementation of a spell checker using bloom filters as proposed in {kata-05}[CodeKata 05].
 
-The spell checker can be used as command line tool (CLI created using `{picocli}`), requiring a dictionary file and a file to be spellchecked to be provided.
+The spell checker has a command line interface (created using `{picocli}`), with the required parameters being the dictionary
+file and the file to be spellchecked.
+The CLI also allows to fine tune the Bloom Filter parameters since the defaults are quite conservative for "real world"
+cases.
 
 To create the `jar` executable run:
 
