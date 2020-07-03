@@ -11,10 +11,10 @@ import java.util.concurrent.Callable;
 @Command(name = "java-spellchecker", mixinStandardHelpOptions = true)
 public class App implements Callable<Integer> {
 
-    @Option(names = {"-m", "--size"}, paramLabel = "NUM", defaultValue = "2500000", description = "the bloom filter size (i.e. number of bits)")
+    @Option(names = {"-m", "--size"}, paramLabel = "NUM", defaultValue = "1024", description = "the bloom filter size (i.e. number of bits)")
     int bitMapSize;
 
-    @Option(names = {"-k", "--hashes"}, paramLabel = "NUM", defaultValue = "6", description = "number of hashes")
+    @Option(names = {"-k", "--hashes"}, paramLabel = "NUM", defaultValue = "1", description = "number of hashes")
     int numberOfHashes;
 
     @Option(names = {"-d", "--dict"}, paramLabel = "FILE", required = true, description = "the dictionary file")
