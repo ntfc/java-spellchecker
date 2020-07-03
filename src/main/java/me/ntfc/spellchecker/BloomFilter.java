@@ -53,6 +53,16 @@ public class BloomFilter {
         return true;
     }
 
+    /**
+     * Create {@code numberOfHashes} hashes for word {@code word}.
+     *
+     * <p>First this will create a 128 bit hash of {@code word} (i.e. 16 bytes). This 16 bytes hash is used to create
+     * two {@code long} numbers (each with 8 bytes).
+     * They are then used to derive {@code numberOfHashes} {@code int} numbers (modulo {@code size}) that will be used
+     * for bloom filter insertion/comparison.
+     *
+     * @return the {@code numberOfHashes} integers to be use as hashes of {@code word}
+     */
     private int[] hashWord(final String word) {
         int[] hashes = new int[numberOfHashes];
 
