@@ -11,10 +11,10 @@ import java.util.concurrent.Callable;
 @Command(name = "java-spellchecker", mixinStandardHelpOptions = true)
 public class App implements Callable<Integer> {
 
-    @Option(names = {"-m"}, paramLabel = "NUM", defaultValue = "2500000", description = "the bloom filter size (i.e. number of bits)")
+    @Option(names = {"-m", "--size"}, paramLabel = "NUM", defaultValue = "2500000", description = "the bloom filter size (i.e. number of bits)")
     int bitMapSize;
 
-    @Option(names = {"-k"}, paramLabel = "NUM", defaultValue = "6", description = "number of hashes")
+    @Option(names = {"-k", "--hashes"}, paramLabel = "NUM", defaultValue = "6", description = "number of hashes")
     int numberOfHashes;
 
     @Option(names = {"-d", "--dict"}, paramLabel = "FILE", required = true, description = "the dictionary file")
@@ -22,6 +22,9 @@ public class App implements Callable<Integer> {
 
     @Option(names = {"-f", "--file"}, paramLabel = "FILE", required = true, description = "the text to spellcheck")
     File textFile;
+
+    @Option(names = {"--verbose"})
+    boolean isVerbose;
 
     public static void main(String[] args) {
         System.exit(new CommandLine(new App()).execute(args));
@@ -34,6 +37,9 @@ public class App implements Callable<Integer> {
 
         Set<String> spellcheck = dictionary.spellcheck(textFile.toPath());
 
+        if (isVerbose) {
+            System.out.println(bloomFilter.toString());
+        }
         System.out.println(spellcheck);
 
         return spellcheck.size();

@@ -1,6 +1,12 @@
 package me.ntfc.spellchecker;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+
+import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.StringJoiner;
 
 public class BloomFilter {
 
@@ -10,20 +16,24 @@ public class BloomFilter {
 
     private final BitSet bitSet;
 
+    private static final HashFunction murmur3_128 = Hashing.murmur3_128();
+
     public BloomFilter(final int size, final int numberOfHashes) {
         this.size = size;
         this.numberOfHashes = numberOfHashes;
         this.bitSet = new BitSet(size);
-        assert bitSet.size() == size;
+        assert bitSet.size() == size; // invariant
     }
 
     public void add(final String word) {
         if (word == null || word.isBlank()) {
             return;
         }
-        int hash = hashWord(word);
+        int[] wordHashes = hashWord(word);
 
-        bitSet.set(hash % size);
+        for (int hash : wordHashes) {
+            bitSet.set(hash);
+        }
 
         assert bitSet.size() == size; // invariant
     }
@@ -33,19 +43,45 @@ public class BloomFilter {
             return false;
         }
 
-        int hash = hashWord(word);
-        if (!bitSet.get(hash % size)) {
-            int lowerCaseHash = hashWord(word.toLowerCase());
-            return bitSet.get(lowerCaseHash % size);
-        } else {
-            return true;
-        }
+        int[] wordHashes = hashWord(word);
 
+        for (int hash : wordHashes) {
+            if (!bitSet.get(hash)) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    private int hashWord(final String word) {
-        // taken from java.util.HashMap.hash
-        int h = word.hashCode();
-        return (h & 0xFFFFFFF) ^ (h >>> 16);
+    private int[] hashWord(final String word) {
+        int[] hashes = new int[numberOfHashes];
+
+        HashCode wordHashCode = murmur3_128.hashBytes(word.getBytes());
+        byte[] wordHashCodeAsBytes = wordHashCode.asBytes();
+
+        assert wordHashCode.bits() == 128;
+        assert wordHashCodeAsBytes.length == 16;
+
+        long long1 = ByteBuffer.wrap(wordHashCodeAsBytes, 0, Long.BYTES /* 8 */).getLong();
+        long long2 = ByteBuffer.wrap(wordHashCodeAsBytes, 8, Long.BYTES /* 8 */).getLong();
+
+        // create "k" hashes
+        long hash = long1;
+        for (int i = 0; i < numberOfHashes; i++) {
+            hash += numberOfHashes * long2;
+            int hashMod = Math.abs((int) (hash % size));
+            hashes[i] = hashMod;
+        }
+
+        return hashes;
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", BloomFilter.class.getSimpleName() + "[", "]")
+                .add("capacity=" + size)
+                .add("elements=" + bitSet.cardinality())
+                .add("bitSet=" + bitSet)
+                .toString();
     }
 }
