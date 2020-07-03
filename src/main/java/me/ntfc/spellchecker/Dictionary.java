@@ -3,6 +3,8 @@ package me.ntfc.spellchecker;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,19 +22,23 @@ public class Dictionary {
         Objects.requireNonNull(bloomFilter);
 
         this.bloomFilter = bloomFilter;
-        readDictionaryToBloomFilter(dictionaryPath);
+        // TODO: might need to support more charsets?
+        try {
+            readDictionaryToBloomFilter(dictionaryPath, StandardCharsets.UTF_8);
+        } catch (MalformedInputException e) {
+            readDictionaryToBloomFilter(dictionaryPath, StandardCharsets.ISO_8859_1);
+        }
 
     }
 
-    private void readDictionaryToBloomFilter(final Path dictionaryPath) throws IOException {
-        // TODO: detect file encoding
-        BufferedReader reader = Files.newBufferedReader(dictionaryPath, StandardCharsets.ISO_8859_1);
-        String line;
-        while ((line = reader.readLine()) != null) {
-            this.bloomFilter.add(line);
+    private void readDictionaryToBloomFilter(final Path dictionaryPath, final Charset charset) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(dictionaryPath, charset)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                this.bloomFilter.add(line);
+            }
         }
     }
-
 
     public Set<String> spellcheck(final Path textFile) throws IOException {
         Objects.requireNonNull(textFile);
